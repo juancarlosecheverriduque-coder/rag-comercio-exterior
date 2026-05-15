@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG Comercio Exterior Colombia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0d0f14;
+  --surface:  #141720;
+  --card:     #1a1e2a;
+  --border:   #252a38;
+  --accent:   #3b82f6;
+  --accent2:  #06b6d4;
+  --gold:     #f59e0b;
+  --text:     #e8eaf0;
+  --muted:    #6b7280;
+  --success:  #10b981;
+  --danger:   #ef4444;
+  --radius:   10px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-badge {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.08em;
+}
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  border-radius: 20px;
+}
+.dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: background .3s;
+}
+.dot.ok  { background: var(--success); box-shadow: 0 0 6px var(--success); }
+.dot.err { background: var(--danger); }
+
+/* ── Layout ── */
+main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 0;
+  height: calc(100vh - 60px);
+}
+
+/* ── Panel lateral ── */
+aside {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 24px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.panel-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.stat-number {
+  font-family: 'Syne', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1;
+}
+.stat-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.fuentes-list { display: flex; flex-direction: column; gap: 6px; }
+.fuente-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text);
+  padding: 7px 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.fuente-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.btn-update {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  padding: 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-update:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.btn-update.loading { opacity: .5; cursor: not-allowed; }
+
+.log-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.6;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+/* ── Chat principal ── */
+.chat-area {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Bienvenida */
+.welcome {
+  max-width: 680px;
+  margin: 40px auto 0;
+  text-align: center;
+}
+.welcome h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.welcome p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+.ejemplos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.ejemplo-btn {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 12px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all .2s;
+  text-align: left;
+}
+.ejemplo-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Mensajes */
+.msg {
+  display: flex;
+  flex-direction: column;
+  max-width: 780px;
+  width: 100%;
+  margin: 0 auto;
+  animation: fadeUp .3s ease;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.msg-user {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+.msg-bubble {
+  padding: 12px 18px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.65;
+  max-width: 100%;
+}
+.msg-user .msg-bubble {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 14px 14px 4px 14px;
+}
+.msg-ia .msg-bubble {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px 14px 14px 14px;
+  white-space: pre-wrap;
+}
+
+.msg-fuentes {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.fuente-chip {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 3px 9px;
+  border-radius: 4px;
+}
+.fuente-chip span { color: var(--accent2); }
+
+.msg-meta {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+/* Typing */
+.typing-indicator {
+  display: flex;
+  gap: 5px;
+  padding: 14px 18px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px 14px 14px 14px;
+  width: fit-content;
+}
+.typing-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: bounce .9s infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: .15s; }
+.typing-dot:nth-child(3) { animation-delay: .30s; }
+@keyframes bounce {
+  0%,60%,100% { transform: translateY(0); }
+  30%          { transform: translateY(-8px); }
+}
+
+/* ── Input area ── */
+.input-area {
+  border-top: 1px solid var(--border);
+  padding: 20px 40px 24px;
+  background: var(--surface);
+}
+.input-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  max-width: 780px;
+  margin: 0 auto;
+}
+textarea {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  resize: none;
+  min-height: 48px;
+  max-height: 140px;
+  line-height: 1.5;
+  transition: border-color .2s;
+  outline: none;
+}
+textarea:focus { border-color: var(--accent); }
+textarea::placeholder { color: var(--muted); }
+
+.send-btn {
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 12px 22px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: opacity .2s, transform .1s;
+  white-space: nowrap;
+  height: 48px;
+}
+.send-btn:hover   { opacity: .88; }
+.send-btn:active  { transform: scale(.97); }
+.send-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.input-hint {
+  text-align: center;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    ⚖️ RAG Comercio Exterior
+    <span class="logo-badge">COLOMBIA</span>
+  </div>
+  <div class="status-pill">
+    <div class="dot" id="dot"></div>
+    <span id="status-text">conectando...</span>
+  </div>
+</header>
+
+<main>
+  <!-- Panel lateral -->
+  <aside>
+    <div>
+      <div class="panel-title">Base de conocimiento</div>
+      <div class="stat-card" style="margin-top:8px">
+        <div class="stat-number" id="total-fragmentos">—</div>
+        <div class="stat-label">fragmentos indexados</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel-title">Fuentes monitoreadas</div>
+      <div class="fuentes-list" style="margin-top:8px">
+        <div class="fuente-tag"><span class="fuente-dot" style="background:#3b82f6"></span> Diario Oficial</div>
+        <div class="fuente-tag"><span class="fuente-dot" style="background:#06b6d4"></span> DIAN</div>
+        <div class="fuente-tag"><span class="fuente-dot" style="background:#10b981"></span> MinCIT</div>
+        <div class="fuente-tag"><span class="fuente-dot" style="background:#f59e0b"></span> VUCE</div>
+        <div class="fuente-tag"><span class="fuente-dot" style="background:#a78bfa"></span> CAN / Arancel</div>
+      </div>
+    </div>
+
+    <div>
+      <button class="btn-update" id="btn-update" onclick="actualizarAhora()">
+        ↻ Buscar normas nuevas ahora
+      </button>
+    </div>
+
+    <div>
+      <div class="panel-title">Última actividad</div>
+      <div class="log-box" id="log-box" style="margin-top:8px">
+        Cargando...
+      </div>
+    </div>
+
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);line-height:1.6">
+      Revisión automática cada 6h<br>
+      <span id="hora-estado"></span>
+    </div>
+  </aside>
+
+  <!-- Chat -->
+  <div class="chat-area">
+    <div class="chat-messages" id="chat">
+      <div class="welcome" id="welcome">
+        <h1>Consulta la normativa</h1>
+        <p>Pregunta sobre aranceles, resoluciones, decretos,<br>
+        procedimientos de importación y exportación en Colombia.</p>
+        <div class="ejemplos">
+          <button class="ejemplo-btn" onclick="setEjemplo(this)">¿Qué documentos necesito para importar maquinaria?</button>
+          <button class="ejemplo-btn" onclick="setEjemplo(this)">¿Cuál es el arancel para el código 8471.30?</button>
+          <button class="ejemplo-btn" onclick="setEjemplo(this)">¿Qué dice la última resolución DIAN sobre vistos buenos?</button>
+          <button class="ejemplo-btn" onclick="setEjemplo(this)">Requisitos VUCE para exportar flores</button>
+          <button class="ejemplo-btn" onclick="setEjemplo(this)">¿Cómo aplica el Arancel Externo Común de la CAN?</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-row">
+        <textarea
+          id="input"
+          placeholder="Escribe tu consulta sobre comercio exterior..."
+          rows="1"
+          onkeydown="checkEnter(event)"
+          oninput="autoResize(this)"
+        ></textarea>
+        <button class="send-btn" id="send-btn" onclick="enviar()">Consultar →</button>
+      </div>
+      <div class="input-hint">Enter para enviar · Shift+Enter para nueva línea</div>
+    </div>
+  </div>
+</main>
+
+<script>
+const chat    = document.getElementById('chat');
+const input   = document.getElementById('input');
+const sendBtn = document.getElementById('send-btn');
+let   enviando = false;
+
+// ── Estado del sistema ────────────────────────────────────────────────────────
+async function actualizarEstado() {
+  try {
+    const r = await fetch('/estado');
+    const d = await r.json();
+    const dot  = document.getElementById('dot');
+    const txt  = document.getElementById('status-text');
+    const frgs = document.getElementById('total-fragmentos');
+    const hora = document.getElementById('hora-estado');
+    const log  = document.getElementById('log-box');
+
+    if (d.db_ok && d.api_key_ok) {
+      dot.className = 'dot ok';
+      txt.textContent = 'sistema activo';
+    } else if (!d.api_key_ok) {
+      dot.className = 'dot err';
+      txt.textContent = 'sin API key';
+    } else {
+      dot.className = 'dot';
+      txt.textContent = 'base vacía';
+    }
+
+    frgs.textContent   = d.fragmentos.toLocaleString('es-CO');
+    hora.textContent   = 'Última revisión: ' + d.hora;
+    log.textContent    = (d.ultima_actividad || []).join('\n') || 'Sin actividad registrada';
+  } catch(e) {
+    document.getElementById('dot').className = 'dot err';
+    document.getElementById('status-text').textContent = 'sin conexión';
+  }
+}
+actualizarEstado();
+setInterval(actualizarEstado, 30000);
+
+// ── Actualización manual ──────────────────────────────────────────────────────
+async function actualizarAhora() {
+  const btn = document.getElementById('btn-update');
+  btn.classList.add('loading');
+  btn.textContent = '↻ Actualizando...';
+  try {
+    await fetch('/actualizar', { method: 'POST' });
+    btn.textContent = '↻ En proceso (puede tardar minutos)';
+    setTimeout(() => {
+      btn.classList.remove('loading');
+      btn.textContent = '↻ Buscar normas nuevas ahora';
+      actualizarEstado();
+    }, 15000);
+  } catch(e) {
+    btn.classList.remove('loading');
+    btn.textContent = '↻ Buscar normas nuevas ahora';
+  }
+}
+
+// ── Mensajes ──────────────────────────────────────────────────────────────────
+function setEjemplo(btn) {
+  input.value = btn.textContent;
+  input.focus();
+  autoResize(input);
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+
+function checkEnter(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    enviar();
+  }
+}
+
+function agregarMensaje(texto, tipo, fuentes) {
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+
+  const div = document.createElement('div');
+  div.className = `msg msg-${tipo}`;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.textContent = texto;
+  div.appendChild(bubble);
+
+  if (fuentes && fuentes.length > 0) {
+    const fDiv = document.createElement('div');
+    fDiv.className = 'msg-fuentes';
+    fuentes.forEach(f => {
+      const chip = document.createElement('div');
+      chip.className = 'fuente-chip';
+      chip.innerHTML = `<span>${f.fuente}</span> · ${f.archivo.slice(0,30)}${f.archivo.length>30?'…':''} · ${f.relevancia}%`;
+      fDiv.appendChild(chip);
+    });
+    div.appendChild(fDiv);
+  }
+
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  return div;
+}
+
+function mostrarTyping() {
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+
+  const div = document.createElement('div');
+  div.className = 'msg msg-ia';
+  div.id = 'typing';
+  div.innerHTML = `<div class="typing-indicator">
+    <div class="typing-dot"></div>
+    <div class="typing-dot"></div>
+    <div class="typing-dot"></div>
+  </div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+async function enviar() {
+  const pregunta = input.value.trim();
+  if (!pregunta || enviando) return;
+
+  enviando = true;
+  sendBtn.disabled = true;
+  input.value = '';
+  input.style.height = 'auto';
+
+  agregarMensaje(pregunta, 'user');
+  mostrarTyping();
+
+  try {
+    const r = await fetch('/consultar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pregunta })
+    });
+    const d = await r.json();
+
+    const typing = document.getElementById('typing');
+    if (typing) typing.remove();
+
+    agregarMensaje(d.respuesta || 'Sin respuesta', 'ia', d.fuentes);
+  } catch(e) {
+    const typing = document.getElementById('typing');
+    if (typing) typing.remove();
+    agregarMensaje('Error de conexión con el servidor. Verifica que el sistema esté activo.', 'ia');
+  }
+
+  enviando = false;
+  sendBtn.disabled = false;
+  input.focus();
+}
+</script>
+</body>
+</html>
